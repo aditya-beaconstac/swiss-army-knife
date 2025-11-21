@@ -444,8 +444,9 @@
 
 .simulation-condition {
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
   padding: 0.75rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -455,6 +456,7 @@
   letter-spacing: 0.1rem;
   text-transform: uppercase;
   color: rgba(245, 245, 245, 0.7);
+  min-width: 140px;
 }
 
 .simulation-condition select {
@@ -464,6 +466,7 @@
   background: rgba(255, 255, 255, 0.05);
   color: #f5f5f5;
   font-size: 0.95rem;
+  flex: 1;
 }
 
 .flow-simulation-modal__empty {
