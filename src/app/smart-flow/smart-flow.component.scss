@@ -80,6 +80,24 @@
   stroke-dasharray: 6;
 }
 
+.connection-line--flow {
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 4px;
+  stroke-dasharray: 2 18;
+  stroke-linecap: round;
+  animation: connection-flow 1.2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes connection-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -40px;
+  }
+}
+
 .connection-arrow {
   fill: rgba(255, 255, 255, 0.4);
 }

@@ -90,6 +90,7 @@ export class SmartFlowComponent implements OnDestroy {
   simulationPreviewObject: SimulationPreviewPayload | null = null;
   simulationResult: SimulationResult | null = null;
   highlightedPath: NodeIdentifier[] = [];
+  highlightedConnections: SmartFlowConnection[] = [];
   nodes: SmartFlowNode[] = [];
   simulationModalStyles: Record<string, string> = {
     top: '50%',
@@ -334,6 +335,7 @@ export class SmartFlowComponent implements OnDestroy {
       this.simulationError = 'Add at least one condition to run simulation.';
       this.simulationResult = null;
       this.highlightedPath = [];
+      this.highlightedConnections = [];
       return;
     }
     const payload = this.buildSimulationPreviewPayload();
@@ -345,6 +347,7 @@ export class SmartFlowComponent implements OnDestroy {
       destination: evaluation.destination
     };
     this.highlightedPath = evaluation.path;
+    this.highlightedConnections = this.buildHighlightedConnections(evaluation.path);
     this.simulationError = null;
   }
 
@@ -880,6 +883,7 @@ export class SmartFlowComponent implements OnDestroy {
     this.showDestinationConfig = false;
     this.editingDefaultDestination = false;
     this.highlightedPath = [];
+    this.highlightedConnections = [];
     this.updateSimulationPreview();
   }
 
@@ -1105,7 +1109,23 @@ export class SmartFlowComponent implements OnDestroy {
     this.showDestinationConfig = false;
     this.editingDefaultDestination = false;
     this.highlightedPath = [];
+    this.highlightedConnections = [];
     this.updateSimulationPreview();
+  }
+
+  private buildHighlightedConnections(path: NodeIdentifier[]): SmartFlowConnection[] {
+    const segments: SmartFlowConnection[] = [];
+    for (let index = 0; index < path.length - 1; index++) {
+      const from = path[index];
+      const to = path[index + 1];
+      const connection = this.connections.find(
+        existing => existing.from === from && existing.to === to
+      );
+      if (connection) {
+        segments.push(connection);
+      }
+    }
+    return segments;
   }
 
   private loadSavedFlowsFromStorage(): void {

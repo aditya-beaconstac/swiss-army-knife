@@ -124,6 +124,12 @@
             [attr.marker-end]="getConnectionMarker(connection)"
           ></path>
         </ng-container>
+        <ng-container *ngFor="let connection of highlightedConnections">
+          <path
+            class="connection-line connection-line--flow"
+            [attr.d]="getConnectionPath(connection)"
+          ></path>
+        </ng-container>
         <ng-container *ngIf="getPreviewPath() as previewPath">
           <path
             class="connection-line connection-line--preview"
