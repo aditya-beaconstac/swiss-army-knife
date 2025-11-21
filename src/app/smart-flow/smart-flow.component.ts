@@ -73,6 +73,7 @@ export class SmartFlowComponent implements OnDestroy {
   destinationUrl = '';
   defaultDestinationUrl = '';
   destinationError: string | null = null;
+  editingDestinationId: number | null = null;
   connections: SmartFlowConnection[] = [];
   connectionPreview: ConnectionPreview | null = null;
   showFlowJson = false;
@@ -149,8 +150,10 @@ export class SmartFlowComponent implements OnDestroy {
   openDefaultDestinationConfig(): void {
     this.showDestinationConfig = true;
     this.editingDefaultDestination = true;
+    this.editingDestinationId = null;
     this.destinationName = 'Default Destination';
     this.destinationUrl = this.defaultDestinationUrl;
+    this.destinationError = null;
   }
 
   saveCondition(): void {
@@ -192,6 +195,23 @@ export class SmartFlowComponent implements OnDestroy {
     }
 
     this.destinationError = null;
+    if (this.editingDestinationId !== null) {
+      this.nodes = this.nodes.map(node =>
+        node.id === this.editingDestinationId
+          ? {
+              ...node,
+              label,
+              metadata: {
+                ...(node.metadata as DestinationMetadata | undefined),
+                destinationUrl: trimmedUrl
+              }
+            }
+          : node
+      );
+      this.closeDestinationConfig();
+      return;
+    }
+
     this.addNode({
       id: this.nodeIdCounter++,
       type: 'destination',
@@ -824,6 +844,7 @@ export class SmartFlowComponent implements OnDestroy {
     this.destinationName = '';
     this.destinationUrl = '';
     this.destinationError = null;
+    this.editingDestinationId = null;
   }
 
   private clearCanvas(): void {
@@ -1100,6 +1121,21 @@ export class SmartFlowComponent implements OnDestroy {
     }
     const metadata = node.metadata as DestinationMetadata | undefined;
     return metadata?.destinationUrl ?? null;
+  }
+
+  handleNodeClick(node: SmartFlowNode): void {
+    if (node.type === 'destination') {
+      this.openDestinationEditor(node);
+    }
+  }
+
+  private openDestinationEditor(node: SmartFlowNode): void {
+    this.showDestinationConfig = true;
+    this.editingDefaultDestination = false;
+    this.editingDestinationId = node.id;
+    this.destinationName = node.label;
+    this.destinationUrl = this.getDestinationUrl(node) ?? '';
+    this.destinationError = null;
   }
 }
 

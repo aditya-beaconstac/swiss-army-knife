@@ -139,13 +139,14 @@
           [style.left.px]="node.x"
           [style.top.px]="node.y"
           (pointerdown)="startDrag($event, node)"
+          (click)="handleNodeClick(node)"
         >
           <button
             type="button"
             class="node-card__remove"
             aria-label="Remove node"
             (pointerdown)="$event.stopPropagation()"
-            (click)="removeNode(node.id)"
+            (click)="removeNode(node.id); $event.stopPropagation()"
           >
             ✕
           </button>
