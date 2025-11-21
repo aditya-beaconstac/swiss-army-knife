@@ -99,6 +99,7 @@ export class SmartFlowComponent implements OnDestroy {
   };
   simulationModalDragging = false;
   private simulationModalInitialized = false;
+  private initialSavedFlowApplied = false;
   private nodeIdCounter = 1;
   private connectionIdCounter = 1;
   draggingNodeId: number | null = null;
@@ -328,6 +329,8 @@ export class SmartFlowComponent implements OnDestroy {
     this.simulationModalDragging = false;
     this.simulationModalDragOffset = null;
     this.detachSimulationModalDragListeners();
+    this.highlightedPath = [];
+    this.highlightedConnections = [];
   }
 
   runSimulation(): void {
@@ -1137,6 +1140,10 @@ export class SmartFlowComponent implements OnDestroy {
       const parsed = JSON.parse(raw) as SavedFlow[];
       if (Array.isArray(parsed)) {
         this.savedFlows = parsed;
+        if (this.savedFlows.length && !this.initialSavedFlowApplied) {
+          this.applyFlowSnapshot(this.savedFlows[0].snapshot);
+          this.initialSavedFlowApplied = true;
+        }
       }
     } catch (error) {
       console.error('Failed to load saved flows from storage', error);
