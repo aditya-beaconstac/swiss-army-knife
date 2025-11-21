@@ -460,8 +460,8 @@
       >
         <div class="simulation-condition__label">{{ condition.label }}</div>
         <select
-          [value]="simulationAssignments[condition.value]"
-          (change)="updateSimulationAssignment(condition.value, $any($event.target).value)"
+          [ngModel]="simulationAssignments[condition.value]"
+          (ngModelChange)="updateSimulationAssignment(condition.value, $event)"
         >
           <option
             *ngFor="let option of getValueOptions(condition.value)"
@@ -471,26 +471,6 @@
           </option>
         </select>
       </div>
-
-      <div class="flow-simulation-modal__result" *ngIf="simulationResult as result">
-        <div>
-          <span>Destination</span>
-          <strong>{{ result.destination.label }}</strong>
-          <small *ngIf="result.destination.url">{{ result.destination.url }}</small>
-        </div>
-        <div>
-          <span>Last run</span>
-          <strong>{{ result.timestamp | date: 'short' }}</strong>
-        </div>
-      </div>
-    </div>
-    <div class="flow-simulation-modal__footer">
-      <button type="button" class="flow-save-modal__action ghost" (click)="closeSimulation()">
-        Close
-      </button>
-      <button type="button" class="flow-save-modal__action primary" (click)="runSimulation()">
-        Run simulation
-      </button>
     </div>
   </div>
 </section>

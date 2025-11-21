@@ -287,8 +287,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: clamp(340px, 65vw, 560px);
-  padding: 1.75rem;
+  width: clamp(320px, 50vw, 460px);
+  padding: 1.25rem 1.5rem;
   border-radius: 24px;
   background: rgba(8, 8, 8, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -362,34 +362,6 @@
   margin: 0;
   font-size: 0.85rem;
   color: #ff9aa2;
-}
-
-.flow-simulation-modal__result {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
-  padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.85rem;
-  letter-spacing: 0.08rem;
-  text-transform: uppercase;
-}
-
-.flow-simulation-modal__result strong {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 1rem;
-  letter-spacing: 0.1rem;
-  text-transform: none;
-}
-
-.flow-simulation-modal__result small {
-  display: block;
-  font-size: 0.75rem;
-  color: rgba(245, 245, 245, 0.6);
-  margin-top: 0.2rem;
 }
 
 .flow-simulation-modal__footer {

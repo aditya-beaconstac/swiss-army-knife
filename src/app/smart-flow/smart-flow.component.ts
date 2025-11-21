@@ -97,6 +97,7 @@ export class SmartFlowComponent implements OnDestroy {
     transform: 'translate(-50%, -50%)'
   };
   simulationModalDragging = false;
+  private simulationModalInitialized = false;
   private nodeIdCounter = 1;
   private connectionIdCounter = 1;
   draggingNodeId: number | null = null;
@@ -311,21 +312,21 @@ export class SmartFlowComponent implements OnDestroy {
     if (!this.isFlowValid) {
       return;
     }
-    this.initializeSimulationAssignments();
+    if (!this.simulationModalInitialized) {
+      this.initializeSimulationAssignments();
+      this.simulationModalInitialized = true;
+    }
     this.simulationError = null;
     this.simulationResult = null;
-    this.resetSimulationModalPosition();
     this.showSimulationModal = true;
+    this.runSimulation();
   }
 
   closeSimulation(): void {
     this.showSimulationModal = false;
-    this.simulationError = null;
-    this.simulationResult = null;
     this.simulationModalDragging = false;
     this.simulationModalDragOffset = null;
     this.detachSimulationModalDragListeners();
-    this.resetSimulationModalPosition();
   }
 
   runSimulation(): void {
@@ -335,7 +336,8 @@ export class SmartFlowComponent implements OnDestroy {
       this.highlightedPath = [];
       return;
     }
-    const payload = this.simulationPreviewObject ?? this.buildSimulationPreviewPayload();
+    const payload = this.buildSimulationPreviewPayload();
+    this.simulationPreviewObject = payload;
     const evaluation = this.evaluateFlow(payload);
     this.simulationResult = {
       timestamp: new Date().toISOString(),
@@ -1000,6 +1002,9 @@ export class SmartFlowComponent implements OnDestroy {
       [criteria]: value
     };
     this.updateSimulationPreview();
+    if (this.showSimulationModal) {
+      this.runSimulation();
+    }
   }
 
   private updateSimulationPreview(): void {
@@ -1191,11 +1196,7 @@ export class SmartFlowComponent implements OnDestroy {
       x: event.clientX - rect.left,
       y: event.clientY - rect.top
     };
-    this.simulationModalStyles = {
-      top: `${rect.top}px`,
-      left: `${rect.left}px`,
-      transform: 'none'
-    };
+    this.updateSimulationModalPosition(rect.left, rect.top, false);
     this.detachSimulationModalDragListeners();
     window.addEventListener('pointermove', this.handleSimulationModalPointerMove);
     window.addEventListener('pointerup', this.handleSimulationModalPointerUp);
@@ -1219,15 +1220,15 @@ export class SmartFlowComponent implements OnDestroy {
     this.detachSimulationModalDragListeners();
   };
 
-  private updateSimulationModalPosition(left: number, top: number): void {
+  private updateSimulationModalPosition(left: number, top: number, clamp = true): void {
     const modal = this.simulationModalRef?.nativeElement;
     if (!modal) {
       return;
     }
     const maxLeft = Math.max(0, window.innerWidth - modal.offsetWidth);
     const maxTop = Math.max(0, window.innerHeight - modal.offsetHeight);
-    const clampedLeft = this.clamp(left, 0, maxLeft);
-    const clampedTop = this.clamp(top, 0, maxTop);
+    const clampedLeft = clamp ? this.clamp(left, 0, maxLeft) : left;
+    const clampedTop = clamp ? this.clamp(top, 0, maxTop) : top;
     this.simulationModalStyles = {
       top: `${clampedTop}px`,
       left: `${clampedLeft}px`,
