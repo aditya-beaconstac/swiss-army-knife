@@ -64,7 +64,7 @@ export class SmartFlowComponent implements OnDestroy {
   editingDefaultDestination = false;
   selectedCriteria: CriteriaKey | '' = 'day';
   selectedOperator: OperatorKey = 'is';
-  selectedCriteriaValue = 'sunday';
+  selectedCriteriaValue = this.criteriaValueMap['day'][0]?.value ?? '';
   selectedCriteriaLabel = this.criteriaOptions[0].label;
   criteriaValueOptions: CriteriaOption[] = this.criteriaValueMap['day'];
   conditionPreview = this.buildConditionPreview();
@@ -367,7 +367,7 @@ export class SmartFlowComponent implements OnDestroy {
     this.selectedCriteriaLabel =
       this.criteriaOptions.find(option => option.value === this.selectedCriteria)?.label ?? '';
     this.criteriaValueOptions = this.criteriaValueMap['day'];
-    this.selectedCriteriaValue = 'sunday';
+    this.selectedCriteriaValue = this.criteriaValueOptions[0]?.value ?? '';
     this.selectedOperator = 'is';
     this.updateConditionPreview();
     this.conditionError = null;
