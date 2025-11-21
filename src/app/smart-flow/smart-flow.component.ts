@@ -271,6 +271,9 @@ export class SmartFlowComponent implements OnDestroy {
   }
 
   openSimulation(): void {
+    if (!this.isFlowValid) {
+      return;
+    }
     this.initializeSimulationAssignments();
     this.simulationError = null;
     this.simulationResult = null;

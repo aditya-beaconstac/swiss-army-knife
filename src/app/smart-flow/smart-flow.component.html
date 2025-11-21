@@ -408,7 +408,14 @@
     >
       Save
     </button>
-    <button type="button" class="dock-button ghost" (click)="openSimulation()">Simulate</button>
+    <button
+      type="button"
+      class="dock-button ghost"
+      [disabled]="!isFlowValid"
+      (click)="openSimulation()"
+    >
+      Simulate
+    </button>
     <button type="button" class="dock-button ghost" (click)="clearAll()">Clear All</button>
   </div>
 
