@@ -88,6 +88,7 @@ export class SmartFlowComponent implements OnDestroy {
   simulationAssignments: Record<string, string> = {};
   simulationPreviewObject: SimulationPreviewPayload | null = null;
   simulationResult: SimulationResult | null = null;
+  highlightedPath: NodeIdentifier[] = [];
   nodes: SmartFlowNode[] = [];
   private nodeIdCounter = 1;
   private connectionIdCounter = 1;
@@ -318,15 +319,17 @@ export class SmartFlowComponent implements OnDestroy {
     if (!this.getConditionNodes().length) {
       this.simulationError = 'Add at least one condition to run simulation.';
       this.simulationResult = null;
+      this.highlightedPath = [];
       return;
     }
     const payload = this.simulationPreviewObject ?? this.buildSimulationPreviewPayload();
-    const destination = this.evaluateFlow(payload);
+    const evaluation = this.evaluateFlow(payload);
     this.simulationResult = {
       timestamp: new Date().toISOString(),
       payload,
-      destination
+      destination: evaluation.destination
     };
+    this.highlightedPath = evaluation.path;
     this.simulationError = null;
   }
 
@@ -859,16 +862,18 @@ export class SmartFlowComponent implements OnDestroy {
     this.showConditionConfig = false;
     this.showDestinationConfig = false;
     this.editingDefaultDestination = false;
+    this.highlightedPath = [];
     this.updateSimulationPreview();
   }
 
-  private evaluateFlow(payload: SimulationPreviewPayload): SimulationDestination {
+  private evaluateFlow(payload: SimulationPreviewPayload): FlowEvaluationResult {
     const defaultDestination = this.defaultDestinationUrl || 'Default Destination';
     const attributes = payload?.attributes ?? {};
 
     let current: NodeIdentifier = 'default-source';
     const visited = new Set<NodeIdentifier>();
     let safety = 0;
+    const path: NodeIdentifier[] = ['default-source'];
 
     while (safety < 100) {
       safety += 1;
@@ -883,9 +888,13 @@ export class SmartFlowComponent implements OnDestroy {
       }
 
       const target = connection.to;
+      path.push(target);
 
       if (target === 'default-destination') {
-        return { label: defaultDestination, url: this.defaultDestinationUrl || null };
+        return {
+          destination: { label: defaultDestination, url: this.defaultDestinationUrl || null },
+          path
+        };
       }
 
       if (typeof target === 'number') {
@@ -896,7 +905,13 @@ export class SmartFlowComponent implements OnDestroy {
 
         if (node.type === 'destination') {
           const destinationMetadata = node.metadata as DestinationMetadata | undefined;
-          return { label: node.label, url: destinationMetadata?.destinationUrl ?? null };
+          return {
+            destination: {
+              label: node.label,
+              url: destinationMetadata?.destinationUrl ?? null
+            },
+            path
+          };
         }
 
         current = target;
@@ -906,7 +921,10 @@ export class SmartFlowComponent implements OnDestroy {
       current = target;
     }
 
-    return { label: defaultDestination, url: this.defaultDestinationUrl || null };
+    return {
+      destination: { label: defaultDestination, url: this.defaultDestinationUrl || null },
+      path
+    };
   }
 
   private resolveNextConnection(
@@ -1066,6 +1084,7 @@ export class SmartFlowComponent implements OnDestroy {
     this.showConditionConfig = false;
     this.showDestinationConfig = false;
     this.editingDefaultDestination = false;
+    this.highlightedPath = [];
     this.updateSimulationPreview();
   }
 
@@ -1121,6 +1140,10 @@ export class SmartFlowComponent implements OnDestroy {
     }
     const metadata = node.metadata as DestinationMetadata | undefined;
     return metadata?.destinationUrl ?? null;
+  }
+
+  isNodeHighlighted(nodeId: NodeIdentifier): boolean {
+    return this.highlightedPath.includes(nodeId);
   }
 
   handleNodeClick(node: SmartFlowNode): void {
@@ -1249,4 +1272,9 @@ interface DefaultDestinationMetadata {
 interface SimulationPreviewPayload {
   generatedAt: string;
   attributes: Record<string, string>;
+}
+
+interface FlowEvaluationResult {
+  destination: SimulationDestination;
+  path: NodeIdentifier[];
 }

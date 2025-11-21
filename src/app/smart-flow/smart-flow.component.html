@@ -37,7 +37,11 @@
           </ng-template>
         </div>
       </div>
-      <div class="default-node" #defaultSourceRef>
+      <div
+        class="default-node"
+        #defaultSourceRef
+        [class.default-node--highlighted]="isNodeHighlighted('default-source')"
+      >
         <span class="default-node__label">QR Code Scanned</span>
         <span
           class="default-node__connector"
@@ -50,6 +54,7 @@
         class="default-destination"
         #defaultDestinationRef
         (click)="openDefaultDestinationConfig()"
+        [class.default-destination--highlighted]="isNodeHighlighted('default-destination')"
       >
         <span class="default-destination__connector" aria-hidden="true"></span>
         <div class="default-destination__content">
@@ -136,6 +141,7 @@
             'node-card--destination': node.type === 'destination'
           }"
           [class.node-card--dragging]="draggingNodeId === node.id"
+          [class.node-card--highlighted]="isNodeHighlighted(node.id)"
           [style.left.px]="node.x"
           [style.top.px]="node.y"
           (pointerdown)="startDrag($event, node)"
