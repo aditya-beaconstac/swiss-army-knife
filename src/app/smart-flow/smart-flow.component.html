@@ -325,6 +325,9 @@
           (input)="destinationUrl = $any($event.target).value"
         />
       </div>
+      <p class="destination-config__error" *ngIf="destinationError">
+        {{ destinationError }}
+      </p>
     </div>
     <div class="destination-config__footer">
       <button type="button" class="destination-config__action ghost" (click)="closeDestinationConfig()">

@@ -72,6 +72,7 @@ export class SmartFlowComponent implements OnDestroy {
   destinationName = '';
   destinationUrl = '';
   defaultDestinationUrl = '';
+  destinationError: string | null = null;
   connections: SmartFlowConnection[] = [];
   connectionPreview: ConnectionPreview | null = null;
   showFlowJson = false;
@@ -180,10 +181,17 @@ export class SmartFlowComponent implements OnDestroy {
 
     if (this.editingDefaultDestination) {
       this.defaultDestinationUrl = trimmedUrl;
+      this.destinationError = null;
       this.closeDestinationConfig();
       return;
     }
 
+    if (!trimmedName || !trimmedUrl) {
+      this.destinationError = 'Enter both a destination name and URL.';
+      return;
+    }
+
+    this.destinationError = null;
     this.addNode({
       id: this.nodeIdCounter++,
       type: 'destination',
@@ -815,6 +823,7 @@ export class SmartFlowComponent implements OnDestroy {
   private resetDestinationForm(): void {
     this.destinationName = '';
     this.destinationUrl = '';
+    this.destinationError = null;
   }
 
   private clearCanvas(): void {
