@@ -307,6 +307,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: grab;
+  user-select: none;
+}
+
+.flow-simulation-modal__header--dragging {
+  cursor: grabbing;
+}
+
+.flow-simulation-modal__header button {
+  cursor: pointer;
 }
 
 .flow-simulation-modal__header h3 {

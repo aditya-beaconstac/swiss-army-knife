@@ -435,8 +435,14 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="simulationTitle"
+    #simulationModal
+    [ngStyle]="simulationModalStyles"
   >
-    <div class="flow-simulation-modal__header">
+    <div
+      class="flow-simulation-modal__header"
+      (pointerdown)="startSimulationModalDrag($event)"
+      [class.flow-simulation-modal__header--dragging]="simulationModalDragging"
+    >
       <h3 id="simulationTitle">Simulate payload</h3>
       <button
         type="button"

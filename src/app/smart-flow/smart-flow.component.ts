@@ -15,6 +15,7 @@ export class SmartFlowComponent implements OnDestroy {
   @ViewChild('workspaceGrid', { static: false }) workspaceGrid?: ElementRef<HTMLDivElement>;
   @ViewChild('defaultSourceRef', { static: false }) defaultSourceRef?: ElementRef<HTMLDivElement>;
   @ViewChild('defaultDestinationRef', { static: false }) defaultDestinationRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('simulationModal', { static: false }) simulationModalRef?: ElementRef<HTMLDivElement>;
   readonly criteriaOptions: CriteriaOption[] = [
     { value: 'day', label: 'Day' },
     { value: 'country', label: 'Country' },
@@ -90,11 +91,18 @@ export class SmartFlowComponent implements OnDestroy {
   simulationResult: SimulationResult | null = null;
   highlightedPath: NodeIdentifier[] = [];
   nodes: SmartFlowNode[] = [];
+  simulationModalStyles: Record<string, string> = {
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)'
+  };
+  simulationModalDragging = false;
   private nodeIdCounter = 1;
   private connectionIdCounter = 1;
   draggingNodeId: number | null = null;
   private dragOffset: { x: number; y: number } = { x: 0, y: 0 };
   private connectionDragSource: ConnectionDragSource | null = null;
+  private simulationModalDragOffset: { x: number; y: number } | null = null;
 
   constructor() {
     this.loadSavedFlowsFromStorage();
@@ -306,6 +314,7 @@ export class SmartFlowComponent implements OnDestroy {
     this.initializeSimulationAssignments();
     this.simulationError = null;
     this.simulationResult = null;
+    this.resetSimulationModalPosition();
     this.showSimulationModal = true;
   }
 
@@ -313,6 +322,10 @@ export class SmartFlowComponent implements OnDestroy {
     this.showSimulationModal = false;
     this.simulationError = null;
     this.simulationResult = null;
+    this.simulationModalDragging = false;
+    this.simulationModalDragOffset = null;
+    this.detachSimulationModalDragListeners();
+    this.resetSimulationModalPosition();
   }
 
   runSimulation(): void {
@@ -391,6 +404,8 @@ export class SmartFlowComponent implements OnDestroy {
     this.detachPointerListeners();
     this.connectionDragSource = null;
     this.detachConnectionListeners();
+    this.simulationModalDragging = false;
+    this.detachSimulationModalDragListeners();
   }
 
   private resetCriteriaSelection(): void {
@@ -1159,6 +1174,78 @@ export class SmartFlowComponent implements OnDestroy {
     this.destinationName = node.label;
     this.destinationUrl = this.getDestinationUrl(node) ?? '';
     this.destinationError = null;
+  }
+
+  startSimulationModalDrag(event: PointerEvent): void {
+    if ((event.target as HTMLElement | null)?.closest('button')) {
+      return;
+    }
+    const modal = this.simulationModalRef?.nativeElement;
+    if (!modal) {
+      return;
+    }
+    event.preventDefault();
+    this.simulationModalDragging = true;
+    const rect = modal.getBoundingClientRect();
+    this.simulationModalDragOffset = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+    this.simulationModalStyles = {
+      top: `${rect.top}px`,
+      left: `${rect.left}px`,
+      transform: 'none'
+    };
+    this.detachSimulationModalDragListeners();
+    window.addEventListener('pointermove', this.handleSimulationModalPointerMove);
+    window.addEventListener('pointerup', this.handleSimulationModalPointerUp);
+  }
+
+  private handleSimulationModalPointerMove = (event: PointerEvent): void => {
+    if (!this.simulationModalDragging || !this.simulationModalDragOffset) {
+      return;
+    }
+    const left = event.clientX - this.simulationModalDragOffset.x;
+    const top = event.clientY - this.simulationModalDragOffset.y;
+    this.updateSimulationModalPosition(left, top);
+  };
+
+  private handleSimulationModalPointerUp = (): void => {
+    if (!this.simulationModalDragging) {
+      return;
+    }
+    this.simulationModalDragging = false;
+    this.simulationModalDragOffset = null;
+    this.detachSimulationModalDragListeners();
+  };
+
+  private updateSimulationModalPosition(left: number, top: number): void {
+    const modal = this.simulationModalRef?.nativeElement;
+    if (!modal) {
+      return;
+    }
+    const maxLeft = Math.max(0, window.innerWidth - modal.offsetWidth);
+    const maxTop = Math.max(0, window.innerHeight - modal.offsetHeight);
+    const clampedLeft = this.clamp(left, 0, maxLeft);
+    const clampedTop = this.clamp(top, 0, maxTop);
+    this.simulationModalStyles = {
+      top: `${clampedTop}px`,
+      left: `${clampedLeft}px`,
+      transform: 'none'
+    };
+  }
+
+  private detachSimulationModalDragListeners(): void {
+    window.removeEventListener('pointermove', this.handleSimulationModalPointerMove);
+    window.removeEventListener('pointerup', this.handleSimulationModalPointerUp);
+  }
+
+  private resetSimulationModalPosition(): void {
+    this.simulationModalStyles = {
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)'
+    };
   }
 }
 
