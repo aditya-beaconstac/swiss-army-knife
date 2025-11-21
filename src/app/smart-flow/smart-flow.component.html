@@ -1,0 +1,473 @@
+<section class="smart-flow">
+  <div
+    class="flow-status-indicator"
+    [class.flow-status-indicator--valid]="isFlowValid"
+    [class.flow-status-indicator--invalid]="!isFlowValid"
+    [attr.aria-label]="isFlowValid ? 'Flow valid' : 'Flow invalid'"
+    [attr.title]="isFlowValid ? 'Flow valid' : 'Flow invalid'"
+  ></div>
+  <div class="smart-flow__workspace">
+    <div class="workspace__grid" #workspaceGrid>
+      <div class="flow-shelf">
+        <div class="flow-shelf__header">
+          <span>Saved flows</span>
+          <span class="flow-shelf__count">{{ savedFlows.length }}</span>
+        </div>
+        <div class="flow-shelf__list" [class.flow-shelf__list--empty]="!savedFlows.length">
+          <ng-container *ngIf="savedFlows.length; else emptyShelf">
+            <button
+              class="flow-pill"
+              type="button"
+              *ngFor="let flow of savedFlows"
+              (click)="loadSavedFlow(flow)"
+            >
+              <span>{{ flow.name }}</span>
+              <span
+                class="flow-pill__remove"
+                role="button"
+                aria-label="Remove saved flow"
+                (click)="removeSavedFlow(flow.id, $event)"
+              >
+                ✕
+              </span>
+            </button>
+          </ng-container>
+          <ng-template #emptyShelf>
+            <span class="flow-shelf__placeholder">Saved flows will appear here</span>
+          </ng-template>
+        </div>
+      </div>
+      <div class="default-node" #defaultSourceRef>
+        <span class="default-node__label">QR Code Scanned</span>
+        <span
+          class="default-node__connector"
+          aria-label="Default node connector"
+          title="Drag to connect"
+          (pointerdown)="startDefaultConnectionDrag($event)"
+        ></span>
+      </div>
+      <div
+        class="default-destination"
+        #defaultDestinationRef
+        (click)="openDefaultDestinationConfig()"
+      >
+        <span class="default-destination__connector" aria-hidden="true"></span>
+        <div class="default-destination__content">
+          <span class="default-destination__eyebrow">Final</span>
+          <strong>Destination</strong>
+          <small *ngIf="defaultDestinationUrl">{{ defaultDestinationUrl }}</small>
+        </div>
+      </div>
+      <svg
+        class="connections-layer"
+        *ngIf="connections.length || connectionPreview"
+        aria-hidden="true"
+        width="100%"
+        height="100%"
+      >
+        <defs>
+          <marker
+            id="connection-arrow-success"
+            markerWidth="10"
+            markerHeight="10"
+            refX="8"
+            refY="5"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M0,0 L10,5 L0,10 z" class="connection-arrow connection-arrow--success"></path>
+          </marker>
+          <marker
+            id="connection-arrow-danger"
+            markerWidth="10"
+            markerHeight="10"
+            refX="8"
+            refY="5"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M0,0 L10,5 L0,10 z" class="connection-arrow connection-arrow--danger"></path>
+          </marker>
+          <marker
+            id="connection-arrow-default"
+            markerWidth="10"
+            markerHeight="10"
+            refX="8"
+            refY="5"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M0,0 L10,5 L0,10 z" class="connection-arrow connection-arrow--default"></path>
+          </marker>
+          <marker
+            id="connection-arrow-preview"
+            markerWidth="10"
+            markerHeight="10"
+            refX="8"
+            refY="5"
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path d="M0,0 L10,5 L0,10 z" class="connection-arrow connection-arrow--preview"></path>
+          </marker>
+        </defs>
+        <ng-container *ngFor="let connection of connections">
+          <path
+            class="connection-line"
+            [ngClass]="connectionClass(connection)"
+            [attr.d]="getConnectionPath(connection)"
+            [attr.marker-end]="getConnectionMarker(connection)"
+          ></path>
+        </ng-container>
+        <ng-container *ngIf="getPreviewPath() as previewPath">
+          <path
+            class="connection-line connection-line--preview"
+            [attr.d]="previewPath"
+            marker-end="url(#connection-arrow-preview)"
+          ></path>
+        </ng-container>
+      </svg>
+      <div class="node-collection" *ngIf="nodes.length; else emptyCanvas">
+        <div
+          class="node-card"
+          *ngFor="let node of nodes; trackBy: trackNode"
+          [ngClass]="{
+            'node-card--condition': node.type === 'condition',
+            'node-card--destination': node.type === 'destination'
+          }"
+          [class.node-card--dragging]="draggingNodeId === node.id"
+          [style.left.px]="node.x"
+          [style.top.px]="node.y"
+          (pointerdown)="startDrag($event, node)"
+        >
+          <button
+            type="button"
+            class="node-card__remove"
+            aria-label="Remove node"
+            (pointerdown)="$event.stopPropagation()"
+            (click)="removeNode(node.id)"
+          >
+            ✕
+          </button>
+          <div class="node-card__label">
+            {{ node.label }}
+            <span
+              *ngIf="node.type === 'destination' && getDestinationUrl(node)"
+              class="node-card__subtext-inline"
+            >
+              ({{ getDestinationUrl(node) }})
+            </span>
+          </div>
+          <div class="node-card__connectors" *ngIf="node.type === 'condition'">
+            <span
+              class="connector connector--success"
+              aria-label="Positive path"
+              (pointerdown)="startConnectionDrag($event, node, 'success')"
+            ></span>
+            <span
+              class="connector connector--danger"
+              aria-label="Negative path"
+              (pointerdown)="startConnectionDrag($event, node, 'danger')"
+            ></span>
+          </div>
+        </div>
+      </div>
+      <ng-template #emptyCanvas>
+        <div class="workspace__hint">
+          <span>Workspace ready</span>
+          <small>Add nodes to begin building your flow.</small>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <div
+    class="node-picker"
+    *ngIf="showNodePicker"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="nodePickerTitle"
+  >
+    <div class="node-picker__header">
+      <h3 id="nodePickerTitle">Choose node type</h3>
+      <button
+        type="button"
+        class="node-picker__close"
+        aria-label="Close node picker"
+        (click)="closeNodePicker()"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="node-picker__actions">
+      <button type="button" class="node-picker__option" (click)="selectNode('condition')">
+        Condition Node
+      </button>
+      <button type="button" class="node-picker__option" (click)="selectNode('destination')">
+        Destination Node
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="node-config"
+    *ngIf="showConditionConfig"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="conditionConfigTitle"
+  >
+    <div class="node-config__header">
+      <h3 id="conditionConfigTitle">Condition settings</h3>
+      <button
+        type="button"
+        class="node-config__close"
+        aria-label="Close condition settings"
+        (click)="closeConditionConfig()"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="node-config__body">
+      <div class="node-config__summary">
+        <span>Condition preview</span>
+        <strong>{{ conditionPreview }}</strong>
+      </div>
+      <div class="node-config__error" *ngIf="conditionError">
+        {{ conditionError }}
+      </div>
+      <div class="node-config__option">
+        <label>Criteria</label>
+        <select
+          #criteriaSelect
+          [value]="selectedCriteria"
+          (change)="onCriteriaChange(criteriaSelect.value)"
+        >
+          <option value="" disabled [selected]="!selectedCriteria">Select criteria</option>
+          <option *ngFor="let option of criteriaOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+      <div class="node-config__option">
+        <label>Condition</label>
+        <select
+          #operatorSelect
+          [value]="selectedOperator"
+          (change)="onOperatorChange(operatorSelect.value)"
+        >
+          <option *ngFor="let option of operatorOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+      <div class="node-config__option">
+        <label>{{ selectedCriteriaLabel || 'Value' }} value</label>
+        <select
+          #criteriaValueSelect
+          [value]="selectedCriteriaValue"
+          (change)="onCriteriaValueChange(criteriaValueSelect.value)"
+        >
+          <option value="" disabled [selected]="!selectedCriteriaValue">
+            Select {{ (selectedCriteriaLabel || 'value') | lowercase }}
+          </option>
+          <option *ngFor="let option of criteriaValueOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+    <div class="node-config__footer">
+      <button type="button" class="node-config__action ghost" (click)="closeConditionConfig()">
+        Cancel
+      </button>
+      <button type="button" class="node-config__action primary" (click)="saveCondition()">
+        Save condition
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="destination-config"
+    *ngIf="showDestinationConfig"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="destinationConfigTitle"
+  >
+    <div class="destination-config__header">
+      <h3 id="destinationConfigTitle">
+        {{ editingDefaultDestination ? 'Default destination' : 'Destination settings' }}
+      </h3>
+      <button
+        type="button"
+        class="destination-config__close"
+        aria-label="Close destination settings"
+        (click)="closeDestinationConfig()"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="destination-config__body">
+      <div class="destination-config__option" *ngIf="!editingDefaultDestination">
+        <label>Destination name</label>
+        <input
+          type="text"
+          placeholder="e.g., Checkout page"
+          [value]="destinationName"
+          (input)="destinationName = $any($event.target).value"
+        />
+      </div>
+      <div class="destination-config__option">
+        <label>URL</label>
+        <input
+          type="url"
+          placeholder="https://example.com"
+          [value]="destinationUrl"
+          (input)="destinationUrl = $any($event.target).value"
+        />
+      </div>
+    </div>
+    <div class="destination-config__footer">
+      <button type="button" class="destination-config__action ghost" (click)="closeDestinationConfig()">
+        Cancel
+      </button>
+      <button type="button" class="destination-config__action primary" (click)="saveDestination()">
+        {{ editingDefaultDestination ? 'Save default' : 'Save destination' }}
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="flow-json-modal"
+    *ngIf="showFlowJson"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="flowJsonTitle"
+  >
+    <div class="flow-json-modal__header">
+      <h3 id="flowJsonTitle">Flow JSON</h3>
+      <button
+        type="button"
+        class="flow-json-modal__close"
+        aria-label="Close flow JSON"
+        (click)="closeFlowJsonModal()"
+      >
+        ✕
+      </button>
+    </div>
+    <pre class="flow-json-modal__content" *ngIf="flowJsonSnapshot as snapshot">
+{{ snapshot | json }}
+    </pre>
+  </div>
+
+  <div
+    class="flow-save-modal"
+    *ngIf="showSaveFlowModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="flowSaveTitle"
+  >
+    <div class="flow-save-modal__header">
+      <h3 id="flowSaveTitle">Name your flow</h3>
+      <button
+        type="button"
+        class="flow-save-modal__close"
+        aria-label="Close flow save modal"
+        (click)="cancelFlowSave()"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="flow-save-modal__body">
+      <label for="flowNameInput">Flow name</label>
+      <input
+        id="flowNameInput"
+        type="text"
+        [value]="flowNameInput"
+        (input)="flowNameInput = $any($event.target).value"
+        placeholder="e.g., Smart drip campaign"
+      />
+      <p class="flow-save-modal__error" *ngIf="flowNameError">{{ flowNameError }}</p>
+    </div>
+    <div class="flow-save-modal__footer">
+      <button type="button" class="flow-save-modal__action ghost" (click)="cancelFlowSave()">
+        Cancel
+      </button>
+      <button type="button" class="flow-save-modal__action primary" (click)="confirmFlowSave()">
+        Save flow
+      </button>
+    </div>
+  </div>
+
+  <div class="smart-flow__dock">
+    <button type="button" class="dock-button primary" (click)="openNodePicker()">Add node</button>
+    <button
+      type="button"
+      class="dock-button ghost"
+      [disabled]="!isFlowValid"
+      (click)="saveFlow()"
+    >
+      Save
+    </button>
+    <button type="button" class="dock-button ghost" (click)="openSimulation()">Simulate</button>
+    <button type="button" class="dock-button ghost" (click)="clearAll()">Clear All</button>
+  </div>
+
+  <div
+    class="flow-simulation-modal"
+    *ngIf="showSimulationModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="simulationTitle"
+  >
+    <div class="flow-simulation-modal__header">
+      <h3 id="simulationTitle">Simulate payload</h3>
+      <button
+        type="button"
+        class="flow-simulation-modal__close"
+        aria-label="Close simulation"
+        (click)="closeSimulation()"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="flow-simulation-modal__body">
+      <div
+        class="simulation-condition"
+        *ngFor="let condition of criteriaOptions"
+      >
+        <div class="simulation-condition__label">{{ condition.label }}</div>
+        <select
+          [value]="simulationAssignments[condition.value]"
+          (change)="updateSimulationAssignment(condition.value, $any($event.target).value)"
+        >
+          <option
+            *ngFor="let option of getValueOptions(condition.value)"
+            [value]="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="flow-simulation-modal__result" *ngIf="simulationResult as result">
+        <div>
+          <span>Destination</span>
+          <strong>{{ result.destination.label }}</strong>
+          <small *ngIf="result.destination.url">{{ result.destination.url }}</small>
+        </div>
+        <div>
+          <span>Last run</span>
+          <strong>{{ result.timestamp | date: 'short' }}</strong>
+        </div>
+      </div>
+    </div>
+    <div class="flow-simulation-modal__footer">
+      <button type="button" class="flow-save-modal__action ghost" (click)="closeSimulation()">
+        Close
+      </button>
+      <button type="button" class="flow-save-modal__action primary" (click)="runSimulation()">
+        Run simulation
+      </button>
+    </div>
+  </div>
+</section>
