@@ -7,7 +7,7 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'swiss-army-knife';
-  isSmartFlowVisible = true;
+  isSmartFlowVisible = false;
 
   revealSmartFlow(): void {
     this.isSmartFlowVisible = true;
