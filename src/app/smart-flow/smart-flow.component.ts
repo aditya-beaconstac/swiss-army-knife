@@ -106,6 +106,8 @@ export class SmartFlowComponent implements OnDestroy {
   private dragOffset: { x: number; y: number } = { x: 0, y: 0 };
   private connectionDragSource: ConnectionDragSource | null = null;
   private simulationModalDragOffset: { x: number; y: number } | null = null;
+  private nodeDragStartPoint: Point | null = null;
+  private suppressNodeClick = false;
 
   constructor() {
     this.loadSavedFlowsFromStorage();
@@ -397,6 +399,8 @@ export class SmartFlowComponent implements OnDestroy {
       x: pointerX - node.x,
       y: pointerY - node.y
     };
+    this.nodeDragStartPoint = { x: pointerX, y: pointerY };
+    this.suppressNodeClick = false;
 
     this.detachPointerListeners();
     window.addEventListener('pointermove', this.handlePointerMove);
@@ -750,6 +754,14 @@ export class SmartFlowComponent implements OnDestroy {
     const pointerX = event.clientX - workspaceRect.left;
     const pointerY = event.clientY - workspaceRect.top;
 
+    if (!this.suppressNodeClick && this.nodeDragStartPoint) {
+      const deltaX = Math.abs(pointerX - this.nodeDragStartPoint.x);
+      const deltaY = Math.abs(pointerY - this.nodeDragStartPoint.y);
+      if (deltaX + deltaY > 3) {
+        this.suppressNodeClick = true;
+      }
+    }
+
     const minX = SmartFlowComponent.NODE_MARGIN;
     const minY = SmartFlowComponent.CANVAS_TOP_OFFSET;
     const maxX =
@@ -770,6 +782,7 @@ export class SmartFlowComponent implements OnDestroy {
       return;
     }
     this.draggingNodeId = null;
+    this.nodeDragStartPoint = null;
     this.detachPointerListeners();
   };
 
@@ -1194,6 +1207,10 @@ export class SmartFlowComponent implements OnDestroy {
   }
 
   handleNodeClick(node: SmartFlowNode): void {
+    if (this.suppressNodeClick) {
+      this.suppressNodeClick = false;
+      return;
+    }
     if (node.type === 'destination') {
       this.openDestinationEditor(node);
     }
